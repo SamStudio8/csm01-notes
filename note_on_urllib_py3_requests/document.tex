@@ -49,7 +49,7 @@ XML examples (see snippet \ref{list:ex1} below) with Python 3.
         from urllib2 import Request, urlopen, URLError
         import xml.etree.ElementTree as ET
 
-        request = Request("http://users.aber.ac.uk/mfc1/csm0120/api.php?"
+        request = Request("http://users.aber.ac.uk/mfc1/csm0120/api.php?" +
                           "uuid0=0BA846D3-CBA2-4D81-AD4C-00004868EA28")
         try:
             tree = ET.parse(urlopen(request))
@@ -104,7 +104,7 @@ the original example.
         from urllib.error import URLError
         import xml.etree.ElementTree as ET
 
-        request = Request("http://users.aber.ac.uk/mfc1/csm0120/api.php?"
+        request = Request("http://users.aber.ac.uk/mfc1/csm0120/api.php?" +
                           "uuid0=0BA846D3-CBA2-4D81-AD4C-00004868EA28")
         try:
             tree = ET.parse(urlopen(request))
@@ -232,7 +232,7 @@ example with \texttt{requests} in place of \texttt{urllib2}:
 
         try:
             # Make the request
-            response = requests.get("http://users.aber.ac.uk/mfc1/csm0120/api.php?"
+            response = requests.get("http://users.aber.ac.uk/mfc1/csm0120/api.php?" +
                                     "uuid0=0BA846D3-CBA2-4D81-AD4C-00004868EA28", stream=True)
         except requests.exceptions.RequestException as e:
             # Catch any possible exceptions
@@ -345,8 +345,8 @@ an error. HTTP for Humans indeed!
         >>> response = requests.get("http://users.aber.ac.uk/mfc1/csm0120/api.php", params={
         >>>     "uuid0": "0BA846D3-CBA2-4D81-AD4C-00004868EA28",
         >>>     "county0": "GREATER MANCHESTER", "county1": ">^_^< i am a cat"})
-        >>> response.url
-        u"http://users.aber.ac.uk/mfc1/csm0120/api.php?county1=%3E%5E_%5E%3C+i+am+a+cat&"\
+        >>> print(response.url)
+        "http://users.aber.ac.uk/mfc1/csm0120/api.php?county1=%3E%5E_%5E%3C+i+am+a+cat&"\
         "county0=GREATER+MANCHESTER&uuid0=0BA846D3-CBA2-4D81-AD4C-00004868EA28"
 
     \end{minted}
