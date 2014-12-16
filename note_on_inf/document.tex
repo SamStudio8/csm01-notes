@@ -1,0 +1,289 @@
+\documentclass[a4paper]{article}
+
+% Margins to 2cm
+\usepackage[left=2cm,right=2cm,top=3cm,bottom=2cm]{geometry}
+
+% No identation on paragraphs
+\usepackage{parskip}
+
+% Allow for code samples and change captions for "Listings" to "Code Snippet"
+\usepackage{minted}
+\usepackage{listings}
+\renewcommand\listingscaption{Code Snippet}
+
+% URLS
+\usepackage{hyperref}
+
+% Prevent hypenation (not the nicest way to do this)
+\hyphenpenalty 1000
+
+% Asterism
+% http://tex.stackexchange.com/questions/194898/how-to-use-an-asterism-to-separate-sections
+\newcommand{\asterism}{\bigskip\par\centerline{*\,*\,*}\medskip\par}%
+
+
+\begin{document}
+
+\begin{center}
+{\huge{Sensible defaults, infinity and None - a note on Practical 3}}
+\noindent\makebox[\linewidth]{\rule{\paperwidth}{0.4pt}}
+\end{center}
+
+\vskip 0.5cm
+
+Cast your mind back to the final question of Practical 3 where
+given a dictionary featuring island names as keys
+and their corresponding co-ordinates as lists, you were asked to find the smallest
+island. A suggested solution can be seen below in code snippet \ref{list:firstsol}.
+
+\begin{listing}[H]
+    \caption[]{A possible solution for Question 8 of Practical 3}
+    \label{list:firstsol}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+
+        def smallest_island(islands_dict):
+
+            # Set the minimum area found to 1,000,000 and the smallest island name to an empty string
+            min_area = 1000000
+            smallest = ""
+
+            # Check each island in the dictionary of islands
+            # Remember `for key in dictionary' is a shortcut for `for key in dictionary.keys()'
+            for island in islands_dict:
+
+                # Get the co-ordinates of the current island from the dictionary
+                # and calculate the size with your landRectangleArea function
+                coords = islands_dict[island]
+                size = landRectangleArea(coords[0], coords[1], coords[2], coords[3])
+
+                # If the current island size is smaller than the minimum area seen so far,
+                # update min_area with the new minimum and update smallest to the current island name
+                if size < min_area:
+                    min_area = size
+                    smallest = island
+
+            # Once the loop is done, return the name of the smallest island
+            return smallest
+
+    \end{minted}
+\end{listing}
+
+Whilst this works, there was some debate as to a sensible default value for the
+variables \texttt{min\_area} \footnote{The example answer given on BlackBoard and
+in class actually used the variable name \texttt{min}, however this is a
+built-in function in Python for returning the smallest element in a list. Python
+is happy to let you `overwrite' these functions without warning and care should be
+taken to avoid doing so. This is the same reason you shouldn't name your
+dictionaries \texttt{dict} or lists \texttt{list}. A list of built-in functions can
+be found at {\href{https://docs.python.org/2/library/functions.html}{https://docs.python.org/2/library/functions.html}}.}
+and \texttt{smallest}. Hard-coding the minimum value seems
+a little arbitrary and could potentially introduce problems later on. What if
+one day your code was used to process much larger islands? If all islands had
+an area larger than 1,000,000 - the smallest island could not be identified (see
+the example in snippet \ref{list:pitfall}).
+
+\begin{listing}[H]
+    \caption[]{An example of the potential pitfall introduced by hard-coding \texttt{min\_area}}
+    \label{list:pitfall}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        >>> min_area = 1000000
+        >>> areas = [1000001, 2000000, 2500000, 3000000, 9999999]
+        >>> for area in areas:
+        ...     if area < min_area:
+        ...         min_area = area
+        ...
+        >>> min_area
+        1000000 # Still 1,000,000 despite the smallest area in the list being 1,000,001
+
+        >>> min(areas)
+        1000001 # Built-in min function shows 1,000,001 as smallest element of areas list
+
+    \end{minted}
+\end{listing}
+
+Note that \texttt{min\_area} is never updated to a new value as none of the entries in
+the \texttt{areas} list are smaller than our hard-coded default of 1,000,000.
+
+We can't guarantee we could ever select an appropriate minimum value in this fashion,
+even if we chose a higher value as a default. What if somebody tries
+to use your program to calculate the smallest island given areas in small units
+like $mm\textsuperscript{2}$? Perhaps somebody else would try and use the code
+to handle island populations rather than area for very densely populated islands?
+
+A suggestion from the class was to instead hard-code \texttt{min\_area} to be the
+largest integer your computer could hold in memory. For most relatively modern desktops
+and laptops the largest \texttt{int} Python can store is 9,223,372,036,854,775,807.
+You can check this yourself as shown in snippet \ref{list:maxsize} using the \texttt{sys} package\footnote{{\href{https://docs.python.org/2/library/sys.html}{https://docs.python.org/2/library/sys.html}}};
+which you may recall having to import for writing to \texttt{stdout} and \texttt{stdin}.
+Along with that functionality, the package contains functions and variables that
+relate to your system - here we are interested in \texttt{maxsize}.
+
+However, for reasons beyond the scope of this course it should be noted that
+Python is actually capable of storing numbers even larger than this and is only limited
+by the amount of memory available on your computer.
+
+\begin{listing}[H]
+    \caption[]{Finding the largest positive integer supported by Python on your computer.}
+    \label{list:maxsize}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        >>> import sys
+        >>> sys.maxsize
+        9223372036854775807
+    \end{minted}
+\end{listing}
+
+So the definition of ``biggest number" is somewhat muddy here. Either way this feels
+almost as arbitrary as our hard-coded million, if not a little less open to the
+pitfall discussed. Surely there must be a better way?
+
+You should by now be familiar with Python's built-in \texttt{int} and \texttt{float}
+functions, which you will
+have been using for converting strings from CSV files and user input to their
+numerical whole-number or decimal representations respectively. \texttt{float}
+has a special use case for creating floats that represent positive or negative infinity.
+
+Snippet \ref{list:infinity} replaces our hard-coded \texttt{min\_area} with positive infinity.
+
+\begin{listing}[H]
+    \caption[]{Setting \texttt{min\_area} to positive infinity.}
+    \label{list:infinity}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+
+        def smallest_island(islands_dict):
+
+            # Set the minimum area found to positive infinity and smallest island name to empty string
+            # Any int or float will always be less than positive infinity
+            min_area = float("inf")
+            smallest = ""
+
+            # Check each island in the dictionary of islands
+            # Remember `for key in dictionary' is a shortcut for `for key in dictionary.keys()'
+            for island in islands_dict:
+
+                # Get the co-ordinates of the current island from the dictionary
+                # and calculate the size with your landRectangleArea function
+                coords = islands_dict[island]
+                size = landRectangleArea(coords[0], coords[1], coords[2], coords[3])
+
+                # If the current island size is smaller than the minimum area seen so far,
+                # update min_area with the new minimum and update smallest to the current island name
+                if size < min_area:
+                    min_area = size
+                    smallest = island
+
+            # Once the loop is done, return the name of the smallest island
+            return smallest
+
+    \end{minted}
+\end{listing}
+
+As any \texttt{int} or \texttt{float} will always be smaller than \texttt{inf},
+here we can guarantee that whatever the input, there will never be an island area greater than
+our initial value for \texttt{min\_area}, without the risk of setting the value to
+a large arbitrary number or the faff of querying the computer for the largest number it can
+hold in memory.
+
+Similarly if we instead wanted to find the largest island, we could set a \texttt{max\_area}
+variable to an initial value of negative infinity with \texttt{float("-inf")}. Any \texttt{int}
+or \texttt{float} will be greater than negative infinity.
+
+For completeness, \texttt{float("infinity")} and \texttt{float("-infinity")} are also valid
+in both Python 2 and 3 and are semantically equal to \texttt{float("inf")} and \texttt{float("-inf")} but
+take longer to type.
+
+\vskip -0.1cm
+\asterism
+\vskip -0.3cm
+
+Python also has a keyword called \texttt{None}, a special constant that represents
+the absence of value. Snippet \ref{list:none} shows how we might use \texttt{None}
+in place of our hard-coded value.
+
+\begin{listing}[H]
+    \caption[]{Setting \texttt{min\_area} to the \texttt{None} constant.}
+    \label{list:none}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+
+        def smallest_island(islands_dict):
+
+            # Set the minimum area found to None and the smallest island name to an empty string
+            min_area = None
+            smallest = ""
+
+            # Check each island in the dictionary of islands
+            # Remember `for key in dictionary' is a shortcut for `for key in dictionary.keys()'
+            for island in islands_dict:
+
+                # Get the co-ordinates of the current island from the dictionary
+                # and calculate the size with your landRectangleArea function
+                coords = islands_dict[island]
+                size = landRectangleArea(coords[0], coords[1], coords[2], coords[3])
+
+                # Check whether min_area has a value set (it won't if this is the first island)
+                if min_area == None:
+                    # If min_area is None, set it to be the current island
+                    min_area = size
+                    smallest = island
+                elif size < min_area:
+                    # Otherwise, if min_area has a value, check whether the current
+                    # island is smaller than the minimum area seen so far and if so,
+                    # update min_area with the new minimum and update smallest to the
+                    # current island name
+                    min_area = size
+                    smallest = island
+
+            # Once the loop is done, return the name of the smallest island
+            return smallest
+
+    \end{minted}
+\end{listing}
+
+Note here that our \texttt{if} statement has changed to first check whether \texttt{min\_area}
+is \texttt{None}, before trying to compare the current island's \texttt{size} to it.
+In Python 2, any variable: be it a \texttt{str}ing, \texttt{int}, \texttt{float} or even
+an empty \texttt{list} or \texttt{dict}, will be greater than \texttt{None}. Which means
+if we failed to set \texttt{min\_area} to something other than \texttt{None} before beginning
+our comparisons, we'd still end up with a \texttt{min\_area} of \texttt{None} at the end of the loop.
+\\Yet, in Python 3, comparisons with \texttt{None} are a little more complicated and can
+return an error if the two types used in a comparison do not have a meaningful ordering
+\footnote{Those interested can read a little more about this via {\href{https://docs.python.org/3/whatsnew/3.0.html\#ordering-comparisons}{https://docs.python.org/3/whatsnew/3.0.html\#ordering-comparisons}}.}.
+
+As \texttt{min\_area} is \texttt{None} initially, when the code processes its first island
+the \texttt{min\_area == None} test will be \texttt{True} and the size of the first island
+will become the new \texttt{min\_area} and \texttt{smallest} will be assigned its name.
+
+All islands processed after the first will use the \texttt{elif} part of the statement
+(as \texttt{min\_area == None} will now always be \texttt{False}) and work as before
+to compare the current island \texttt{size} to the \texttt{min\_area} seen so far.
+
+\end{document}

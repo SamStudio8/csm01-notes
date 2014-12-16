@@ -1,0 +1,147 @@
+\documentclass[a4paper]{article}
+
+% Margins to 2cm
+\usepackage[left=2cm,right=2cm,top=3cm,bottom=2cm]{geometry}
+
+% No identation on paragraphs
+\usepackage{parskip}
+
+% Allow for code samples and change captions for "Listings" to "Code Snippet"
+\usepackage{minted}
+\usepackage{listings}
+\renewcommand\listingscaption{Code Snippet}
+
+% URLS
+\usepackage{hyperref}
+
+% Prevent hypenation (not the nicest way to do this)
+\hyphenpenalty 1000
+
+% Asterism
+% http://tex.stackexchange.com/questions/194898/how-to-use-an-asterism-to-separate-sections
+\newcommand{\asterism}{\bigskip\par\centerline{*\,*\,*}\medskip\par}%
+
+
+\begin{document}
+
+%TODO don't need result, just use cur?
+
+\begin{center}
+{\huge{Result dictionaries with SQLite - a note on Lecture 7}}
+\noindent\makebox[\linewidth]{\rule{\paperwidth}{0.4pt}}
+\end{center}
+
+\vskip 0.5cm
+
+Last week we looked at creating and executing SQL queries on our SQLite databases
+from Python programs. At the very end of the lecture you were introduced to an
+example similar to snippet \ref{list:tup} below.
+
+\begin{listing}[H]
+    \caption[]{Executing a simple query on an SQLite database from Python}
+    \label{list:tup}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        import sqlite3
+
+        # Establish database connection and cursor
+        con = sqlite3.connect("test.db")
+        cur = con.cursor()
+
+        # Execute a query
+        result = cur.execute("SELECT postcode, streetname, house_number FROM address")
+
+        # Do something with the resulting row tuples
+        for row in result:
+            # Output each address as "<house_number> <streetname>, <postcode>"
+            print(row[2] + " " row[1] + ", " + row[0])
+
+        # Close the database connection
+        con.close()
+
+    \end{minted}
+\end{listing}
+
+Here, we establish a connection to our \texttt{test.db} database using the
+\texttt{sqlite3} package\footnote{{\href{https://docs.python.org/2/library/sqlite3.html}{https://docs.python.org/2/library/sqlite3.html}}}
+and get a cursor from the connection to allow us to make queries. We then use
+the cursor to execute an SQL query to fetch the house number, street name
+and postcode for each property in the \texttt{address} table. To output the
+addresses to the terminal, we then use a for loop over the \texttt{result} cursor
+to read the values for each returned \texttt{row} \texttt{tuple} in turn.
+
+You will notice that the ordering of the fields in the query maps to the index
+of the values in each \texttt{row} tuple. For example, the postcode field appears
+first in our query and is accessed via \texttt{row[0]}.
+
+\pagebreak
+
+But what if you want to access fields by their name? Snippet \ref{list:row} shows
+how to alter an attribute of the connection such that cursors do not return rows
+as a \texttt{tuple}, but as a special built-in \texttt{sqlite.Row} type - which
+amongst a few other things, allows access to fields returned in a row by name in
+a dictionary-like fashion.
+
+\begin{listing}[H]
+    \caption[]{Changing an attribute of \texttt{con} to return resulting rows as an \texttt{sqlite.Row} rather than a \texttt{tuple}}
+    \label{list:row}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        import sqlite3
+
+        # Establish database connection
+        con = sqlite3.connect("test.db")
+
+        # Set the row_factory attribute of the database connection to sqlite3.Row
+        # This causes result rows to be returned as sqlite.Row rather than tuples
+        con.row_factory = sqlite3.Row
+
+        # Now get the cursor
+        #   If we had set the row_factory after the cursor, the new factory would
+        #   not have been applied to the cursor and we'd still get tuples back...
+        cur = con.cursor()
+
+        # Execute a query
+        result = cur.execute("SELECT postcode, streetname, house_number FROM address")
+
+        # Do something with the resulting rows
+        for row in result:
+            # We can now access field values by their name
+            # Output each address as "<house_number> <streetname>, <postcode>"
+            print(row["house_number"] + " " + row["streetname"] + ", " + row["postcode"])
+
+        # Close the database connection
+        con.close()
+
+    \end{minted}
+\end{listing}
+
+%TODO package dot syntax?
+The \texttt{row\_factory} attribute of the database connection is a function
+responsible for the format in which cursors return rows from a query. As we've seen
+in snippet \ref{list:tup}, by default the \texttt{row\_factory}
+manufactures a \texttt{tuple} for each row.
+However, as mentioned the \texttt{sqlite3} package includes an
+optimised \texttt{Row} type\footnote{Hopefully you will remember from your experiments
+with importing and using functions from your weather package, that the \texttt{Row} type
+of the \texttt{sqlite3} package is accessed via \texttt{sqlite3.Row} - assuming \texttt{sqlite3}
+has been imported of course.} which can
+be assigned to the connection's \texttt{row\_factory} as demonstrated.
+
+Note that this must be done before you request the cursor from the connection,
+else the cursor will have the default \texttt{row\_factory} given to it by the connection.
+Finally, as you can see, we are now able to access fields with dictionary-like syntax.
+
+Don't forget to close your connections!
+
+\end{document}

@@ -1,0 +1,355 @@
+\documentclass[a4paper]{article}
+
+% Margins to 2cm
+\usepackage[left=2cm,right=2cm,top=3cm,bottom=2cm]{geometry}
+
+% No identation on paragraphs
+\usepackage{parskip}
+
+% Allow for code samples and change captions for "Listings" to "Code Snippet"
+\usepackage{minted}
+\usepackage{listings}
+\renewcommand\listingscaption{Code Snippet}
+
+% URLS
+\usepackage{hyperref}
+
+% Prevent hypenation (not the nicest way to do this)
+\hyphenpenalty 1000
+
+% Asterism
+% http://tex.stackexchange.com/questions/194898/how-to-use-an-asterism-to-separate-sections
+\newcommand{\asterism}{\bigskip\par\centerline{*\,*\,*}\medskip\par}%
+
+
+\begin{document}
+
+\begin{center}
+    {\huge{A note on \texttt{urllib} and Python 3}}\\
+    {\LARGE{and a short introduction to \texttt{requests}}}
+\noindent\makebox[\linewidth]{\rule{\paperwidth}{0.4pt}}
+\end{center}
+
+\vskip 0.5cm
+
+Towards the end of our penultimate lecture, a question was raised by someone in
+the class about an error they had been encountered when trying to run one of the
+XML examples (see snippet \ref{list:ex1} below) with Python 3.
+
+\begin{listing}[H]
+    \caption[]{Example API request as introduced at the end of Lecture 9}
+    \label{list:ex1}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        from urllib2 import Request, urlopen, URLError
+        import xml.etree.ElementTree as ET
+
+        request = Request("http://users.aber.ac.uk/mfc1/csm0120/api.php?"
+                          "uuid0=0BA846D3-CBA2-4D81-AD4C-00004868EA28")
+        try:
+            tree = ET.parse(urlopen(request))
+            # Do something...
+        except URLError, e:
+            print(e)
+
+    \end{minted}
+\end{listing}
+
+The example is fairly simple; import the necessary functions from the \texttt{urllib2}
+and \texttt{xml} packages and create a \texttt{Request} to the desired API endpoint. The code
+then attempts to open the \texttt{Request}'s URL with \texttt{urlopen} and
+catches any \texttt{URLError}s that may occur in the process. Snippet \ref{list:err1}
+demonstrates what happens when running this code in an interpreter using Python 3.
+
+\begin{listing}[H]
+    \caption[]{Error encountered running the example with Python 3}
+    \label{list:err1}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        >>> from urllib2 import Request, urlopen, URLError
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        ImportError: No module named "urllib2"
+
+    \end{minted}
+\end{listing}
+
+The \texttt{urllib2} documentation\footnote{{\href{https://docs.python.org/2/library/urllib2.html}{https://docs.python.org/2/library/urllib2.html}}} informs us that in Python 3, the module has been split into a
+pair of smaller modules; \texttt{urllib.request} and \texttt{urllib.error}, and so
+the \texttt{urllib2} module doesn't exist in the standard library anymore.
+Snippet \ref{list:python3} demonstrates how to import these packages and ``fix"
+the original example.
+
+\begin{listing}[H]
+    \caption[]{Updating the API example for Python 3}
+    \label{list:python3}
+    \begin{minted}[mathescape,
+                linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        from urllib.request import Request, urlopen
+        from urllib.error import URLError
+        import xml.etree.ElementTree as ET
+
+        request = Request("http://users.aber.ac.uk/mfc1/csm0120/api.php?"
+                          "uuid0=0BA846D3-CBA2-4D81-AD4C-00004868EA28")
+        try:
+            tree = ET.parse(urlopen(request))
+            # Do something...
+        except URLError as e:
+            print(e)
+
+    \end{minted}
+\end{listing}
+
+\pagebreak
+
+A subtle change you may not have noticed appears in the error handling on line
+10 of snippet \ref{list:python3}. A `Python Enhancement Proposal' submitted as part of
+the Python 3 specification\footnote{PEP 3110 - Catching Exceptions in Python 3000 --- {\href{https://www.python.org/dev/peps/pep-3110/}{https://www.python.org/dev/peps/pep-3110/}}}  cleaned up a potential ambiguity
+when using the \texttt{except} keyword and now requires use of the \texttt{as}
+keyword instead of the comma we have been using. Thankfully this syntax is valid in
+Python 2, too.
+
+But this is a bit frustrating, what if we want a script to work for users without
+having to worry what version of Python they are using? Whilst it is possible to
+obtain the Python version number from the \texttt{sys} package as shown in
+snippet \ref{list:get_version}, it may not always be correct (depending on how
+the different versions of Python are actually installed).
+
+\begin{listing}[H]
+    \caption[]{Fetching Python's version number using the \texttt{sys} package}
+    \label{list:get_version}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        sam@fi ~> python
+        >>> import sys
+        >>> sys.version
+        "2.7.5 (default, Jun 26 2014, 11:55:39) \n[GCC 4.8.2 20131212 (Red Hat 4.8.2-7)]"
+        >>> sys.version_info
+        sys.version_info(major=2, minor=7, micro=5, releaselevel="final", serial=0)
+        >>> sys.version_info[:2]
+        (2, 7)
+
+        sam@fi ~> python3
+        >>> import sys
+        >>> sys.version
+        "3.3.2 (default, Jun 30 2014, 12:45:18) \n[GCC 4.8.2 20131212 (Red Hat 4.8.2-7)]"
+        >>> sys.version_info
+        sys.version_info(major=3, minor=3, micro=2, releaselevel="final", serial=0)
+        >>> sys.version_info[:2]
+        (3, 3)
+
+    \end{minted}
+\end{listing}
+
+However, all is not lost. There is an even easier way that doesn't even involve
+inspecting the contents of the \texttt{version\_info[:2]} tuple. You should now
+be familiar with \texttt{Exceptions} in Python and how we can use the \texttt{try}
+and \texttt{except} keywords to `catch' errors our code may encounter.
+Snippet \ref{list:import_except} shows how we can use the fact that Python raises
+an \texttt{ImportError} when a problem is encountered with importing modules to
+our advantage.
+
+\begin{listing}[H]
+    \caption[]{Taking advantage of \texttt{ImportError} to support Python 2 and 3}
+    \label{list:import_except}
+    \begin{minted}[mathescape,
+                %linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        try:
+            # Try and import using Python 2 compatible package
+            from urllib2 import Request, urlopen, URLError
+        except ImportError:
+            # Python 3 will raise an ImportError as the urllib2 package does not exist
+            # and so the imports we place in this block will be run - only by Python 3!
+            from urllib.request import Request, urlopen
+            from urllib.error import URLError
+
+    \end{minted}
+\end{listing}
+
+Simple! When Python 3 raises the \texttt{ImportError} as we saw in snippet \ref{list:err1},
+we can catch it and run the necessary imports for the program to work. Python 2
+doesn't raise the \texttt{ImportError} and so skips over the additional imports
+inside the \texttt{except} block\footnote{There is some loss of generality in this example.
+Python 2 and 3 both encompass several different `minor' versions and some packages
+actually differ between these minor versions. In fact the \texttt{xml} library we
+have been using has been known as four different packages in its lifetime! We don't
+need to worry about this as it's been the same since Python 2.5, but if you needed
+to support very old versions of Python (a \textbf{very rare} occurrence), you'd need to catch all three possible \texttt{ImportError}s! See: Stack Overflow: Best way to import version-specific python modules ---
+{\href{http://stackoverflow.com/questions/342437/best-way-to-import-version-specific-python-modules}{http://stackoverflow.com/questions/342437/best-way-to-import-version-specific-python-modules}}}.
+
+\pagebreak
+\asterism
+
+As an aside, at the end of our final lecture, I mentioned my personal preference
+for the \texttt{Requests}\footnote{{\href{http://docs.python-requests.org/}{http://docs.python-requests.org/}}} package. Self styled as ``HTTP for Humans" its authors
+believe it is superior and simpler to use than the older \texttt{urllib2} package.
+The package is compatible with all version of Python that you have met on this course
+and according to the Anaconda package documentation\footnote{{\href{http://docs.continuum.io/anaconda/pkg-docs.html}{http://docs.continuum.io/anaconda/pkg-docs.html}}},
+should be installed on your system already\footnote{I've confirmed this for Python 2.7
+but not for Python 3.3. Instructions on installing further packages with \texttt{conda}
+can be found at {\href{http://docs.continuum.io/anaconda/faq.html\#install-packages}{http://docs.continuum.io/anaconda/faq.html\#install-packages}}}.
+
+Diving straight to an example, snippet \ref{list:requests_101} presents our earlier
+example with \texttt{requests} in place of \texttt{urllib2}:
+
+\begin{listing}[H]
+    \caption[]{Transplanting \texttt{requests} in to our earlier example}
+    \label{list:requests_101}
+    \begin{minted}[mathescape,
+                linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        import requests
+        import xml.etree.ElementTree as ET
+
+        try:
+            # Make the request
+            response = requests.get("http://users.aber.ac.uk/mfc1/csm0120/api.php?"
+                                    "uuid0=0BA846D3-CBA2-4D81-AD4C-00004868EA28", stream=True)
+        except requests.exceptions.RequestException as e:
+            # Catch any possible exceptions
+            print(e)
+        else:
+            tree = ET.parse(response.raw)
+            # Do something...
+
+    \end{minted}
+\end{listing}
+
+Here the \texttt{Request} and \texttt{urlopen} steps of snippet \ref{list:ex1} are
+effectively rolled in to one function call to \texttt{requests.get} whose result
+is saved in the \texttt{response} variable. Note the
+\texttt{stream=True} keyword argument (line 7) which forces the get function to
+return a file-like response from the API which is what the \texttt{ElementTree}
+parser expects on line 12. We try to catch any possible \texttt{requests.exceptions.RequestException}s
+that may occur, else we move on to create the tree as before. Note also we pass
+\texttt{response.raw} to the parser, for the same reason as before\footnote{We don't need
+to go in to much detail here but if we did not set \texttt{stream=True} and tried
+to just pass the plain XML response string to the parser, \texttt{parse} would assume
+this string was a file name and fail to build a tree. We could use \texttt{fromString} instead,
+but as we saw in the final lecture, that can lead to some troubles of its own and
+we're trying to reduce the number of changes needed to use this different package!}.
+
+It might seem like we've overcomplicated the example somewhat with this stream
+and raw stuff that I'm trying to circumvent a lengthy explanation of, but the benefits of
+the \texttt{requests} package become more obvious when we try to improve
+on the initial example like we have done in snippet \ref{list:requests_w_payload}:
+
+\asterism
+\pagebreak
+
+\begin{listing}[H]
+    \caption[]{A somewhat improved example using some other features of \texttt{requests}}
+    \label{list:requests_w_payload}
+    \begin{minted}[mathescape,
+                linenos,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+
+        import requests
+        import xml.etree.ElementTree as ET
+
+        # Populate a "payload" dictionary to send to the API
+        payload = {"uuid0": "0BA846D3-CBA2-4D81-AD4C-00004868EA28",
+                "county0": "GREATER MANCHESTER"}
+
+        try:
+            # Make the request
+            response = requests.get("http://users.aber.ac.uk/mfc1/csm0120/api.php",
+                                        params=payload, stream=True)
+        except requests.exceptions.RequestException as e:
+            # Catch any possible exceptions
+            print(e)
+        else:
+            # Check whether the request was actually successful
+            if response.status_code == 200:
+                tree = ET.parse(response.raw)
+                # Do something...
+            else:
+                # If the status is not HTTP 200 (OK), raise the status as an HTTPError
+                print(response.raise_for_status())
+
+
+    \end{minted}
+\end{listing}
+
+Firstly we populate a dictionary with the key-value pairs that we want to use to
+query the API (see Assignment 2 for further information). Here we ask for some
+information on a particular house sale and the geographical co-ordinates of a
+county that happens to contain a sneaky space character.
+
+We've added a second keyword argument on line 11 to the \texttt{requests.get} function;
+\texttt{params=payload}. This \texttt{params} argument accepts a dictionary which
+is used to build the URL of the API request automatically, including escaping
+characters such as spaces where necessary\footnote{You may wonder why the space has
+been encoded to \texttt{+} instead of the \texttt{\%20} we were shown in class. The plus
+symbol is actually a valid replacement for the space character when being used in
+a query string of an URL, you'll notice other non-alphanumeric characters are correctly
+encoded to their \%XX counterparts} (see snippet \ref{list:requests_w_params}).
+Note we no longer need the ? at the end of the URL on line 10 either, it's taken care of.
+
+Whilst not necessary due to the nature of this assignment and the API itself,
+in a real world application we might also want to check
+the status code of the response from the API. You've most likely come across `404' errors
+on the internet for pictures of cats that can no longer be found, such errors are not raised
+by \texttt{RequestException} as a `404' is still a valid response. Many APIs will return a status
+code of `400' for ``Bad Request"\footnote{You can
+find a full list on Wikipedia: List of HTTP status codes --- {\href{https://en.wikipedia.org/wiki/List\_of\_HTTP\_status\_codes}{https://en.wikipedia.org/wiki/List\_of\_HTTP\_status\_codes}}}
+for incorrect or missing parameters in your query.
+
+As shown on line 17, we can test whether the \texttt{status\_code} attribute of our
+\texttt{response} is equal to the number 200, which represents the status ``OK".
+If it is, we can get on with building the tree as before, otherwise we use the
+response's special \texttt{raise\_for\_status} function to elevate the HTTP status
+code to a proper exception; \texttt{HTTPError} that will stop the program and print
+an error. HTTP for Humans indeed!
+\begin{listing}[H]
+    \caption[]{Given a dictionary \texttt{params}, \texttt{requests} can build your API endpoint URL for you}
+    \label{list:requests_w_params}
+    \begin{minted}[mathescape,
+                numbersep=5pt,
+                gobble=8,
+                frame=lines,
+                framesep=2mm]{python}
+        >>> import requests
+        >>> response = requests.get("http://users.aber.ac.uk/mfc1/csm0120/api.php", params={
+        >>>     "uuid0": "0BA846D3-CBA2-4D81-AD4C-00004868EA28",
+        >>>     "county0": "GREATER MANCHESTER", "county1": ">^_^< i am a cat"})
+        >>> response.url
+        u"http://users.aber.ac.uk/mfc1/csm0120/api.php?county1=%3E%5E_%5E%3C+i+am+a+cat&"\
+        "county0=GREATER+MANCHESTER&uuid0=0BA846D3-CBA2-4D81-AD4C-00004868EA28"
+
+    \end{minted}
+\end{listing}
+
+\end{document}
