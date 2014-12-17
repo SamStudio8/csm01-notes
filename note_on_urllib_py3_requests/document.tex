@@ -32,6 +32,17 @@
 
 \vskip 0.5cm
 
+This note affects those of you who use Python 3 and wish to send API
+requests to web services on the Internet. For example, we used API
+requests to download XML data in the Worksheet 9 (on APIs)
+and in Assignment 2 to collect house sales data in an XML document. The
+problem is that in Python 3, the \texttt{urllib2} module no longer exists and
+as such, this note shows us how to use the Python 3 \texttt{urllib.request} and
+\texttt{urllib.error} packages, or, alternatively, how to use the \texttt{requests}
+module instead.
+
+\section*{\texttt{urllib} and Python 3}
+
 Towards the end of our penultimate lecture, a question was raised by someone in
 the class about an error they had been encountered when trying to run one of the
 XML examples (see snippet \ref{list:ex1} below) with Python 3.
@@ -115,7 +126,6 @@ the original example.
     \end{minted}
 \end{listing}
 
-\pagebreak
 
 A subtle change you may not have noticed appears in the error handling on line
 10 of snippet \ref{list:python3}. A `Python Enhancement Proposal' submitted as part of
@@ -123,6 +133,8 @@ the Python 3 specification\footnote{PEP 3110 - Catching Exceptions in Python 300
 when using the \texttt{except} keyword and now requires use of the \texttt{as}
 keyword instead of the comma we have been using. Thankfully this syntax is valid in
 Python 2, too.
+
+\section*{Version-agnostic \texttt{urllib} solution}
 
 But this is a bit frustrating, what if we want a script to work for users without
 having to worry what version of Python they are using? Whilst it is possible to
@@ -203,7 +215,8 @@ to support very old versions of Python (a \textbf{very rare} occurrence), you'd 
 {\href{http://stackoverflow.com/questions/342437/best-way-to-import-version-specific-python-modules}{http://stackoverflow.com/questions/342437/best-way-to-import-version-specific-python-modules}}}.
 
 \pagebreak
-\asterism
+
+\section*{A short introduction to \texttt{requests}}
 
 As an aside, at the end of our final lecture, I mentioned my personal preference
 for the \texttt{Requests}\footnote{{\href{http://docs.python-requests.org/}{http://docs.python-requests.org/}}} package. Self styled as ``HTTP for Humans" its authors
